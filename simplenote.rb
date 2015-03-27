@@ -77,7 +77,7 @@ class Simplenote
     return nil unless token
     note['content'] =
       URI.encode_www_form_component(note['content']) if note.key?('content')
-    api_str = (note.key?('key') ? "api2/data/#{note['key']}" : 'api2/data')
+    api_str = 'api2/data' + (note.key?('key') ? "/#{note['key']}" : '')
     url = SERVER_URL + api_str + "?auth=#{@token}&email=#{@email}"
     begin
       page = @agent.post(url, JSON.generate(note),
