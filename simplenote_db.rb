@@ -39,9 +39,10 @@ class SimplenoteDB
   def update_note(note)
     note_db = search_note(note['key'])
     return add_note(note) unless note_db
-    note.each do |attr, value|
-      # Skip if attr is key or its value is not changed
-      next if attr == 'key' || !note_db.key?(attr) || value == note_db[attr]
+    note.select { |attr, value|
+      # Ignore if attr is key or its value is not changed
+      attr != 'key' && note_db.key?(attr) && note_db[attr] != value
+    }.each do |attr, value|
       value = value.join(' ') if attr == 'tags' || attr == 'systemtags'
       if attr == 'tags' || attr == 'systemtags' || attr == 'content'
         # Quote value if it's TEXT attribute
