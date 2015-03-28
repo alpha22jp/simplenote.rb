@@ -38,7 +38,7 @@ class SimplenoteDB
 
   def update_note(note)
     note_db = search_note(note['key'])
-    return unless note_db
+    return add_note(note) unless note_db
     note.each do |attr, value|
       # Skip if attr is key or its value is not changed
       next if attr == 'key' || value == note_db[attr]
