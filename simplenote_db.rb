@@ -72,12 +72,8 @@ class SimplenoteDB
   end
 
   def all_notes
-    res = @db.execute('SELECT * FROM notes ORDER BY modifydate')
-    note_list = []
-    res.each do |item|
-      note_list.push(to_note(item))
-    end
-    note_list
+    @db.execute('SELECT * FROM notes ORDER BY modifydate')
+      .map { |i| to_note(i) }
   end
 end
 
