@@ -41,7 +41,7 @@ class SimplenoteDB
     return add_note(note) unless note_db
     note.each do |attr, value|
       # Skip if attr is key or its value is not changed
-      next if attr == 'key' || value == note_db[attr]
+      next if attr == 'key' || !note_db.key?(attr) || value == note_db[attr]
       value = value.join(' ') if attr == 'tags' || attr == 'systemtags'
       if attr == 'tags' || attr == 'systemtags' || attr == 'content'
         # Quote value if it's TEXT attribute
