@@ -8,6 +8,7 @@
 require 'time'
 require 'base64'
 require 'mechanize'
+require 'erb'
 
 #-------------------------------------------------------------------------------
 # Simplenote server
@@ -75,12 +76,10 @@ class Simplenote
 
   def update_note(note)
     return nil unless token
-    note['content'] =
-      URI.encode_www_form_component(note['content']) if note.key?('content')
     api_str = 'api2/data' + (note.key?('key') ? "/#{note['key']}" : '')
     url = SERVER_URL + api_str + "?auth=#{@token}&email=#{@email}"
     begin
-      page = @agent.post(url, JSON.generate(note),
+      page = @agent.post(url, ERB::Util.url_encode(JSON.generate(note)),
                          'Content-Type' => 'application/json')
     rescue Mechanize::ResponseCodeError => e
       puts "Create note error (#{e.response_code})"
