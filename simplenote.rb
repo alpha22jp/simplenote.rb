@@ -85,7 +85,9 @@ class Simplenote
       puts "Create note error (#{e.response_code})"
       return nil
     else
-      return JSON.parse(page.body)
+      note_new = JSON.parse(page.body)
+      note_new['content'] = note['content'] unless note_new['content']
+      return note_new
     end
   end
 
