@@ -31,8 +31,7 @@ class Simplenote
     url = SERVER_URL + 'api/login'
     form_data = URI.encode_www_form('email' => @email, 'password' => @password)
     begin
-      page = @agent.post(url, Base64.strict_encode64(form_data),
-                         'Content-Type' => 'application/x-www-form-urlencoded')
+      page = @agent.post(url, Base64.strict_encode64(form_data))
     rescue Mechanize::ResponseCodeError => e
       puts "Get token error (#{e.response_code})"
       @token = nil
