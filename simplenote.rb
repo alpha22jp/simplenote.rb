@@ -5,105 +5,104 @@
 #   Author: alpha22jp@gmail.com
 #-------------------------------------------------------------------------------
 
-require 'time'
+require 'httparty'
+require 'http/exceptions'
 require 'base64'
-require 'mechanize'
-require 'erb'
 
 #-------------------------------------------------------------------------------
 # Simplenote server
 
 class Simplenote
-  SERVER_URL = 'https://simple-note.appspot.com/'
+  include HTTParty
+  base_uri 'https://simple-note.appspot.com/'
 
   def initialize(email, password)
     @email = email
     @password = password
     @token = nil
-    @agent = Mechanize.new
-    @agent.verify_mode = OpenSSL::SSL::VERIFY_NONE
-    @agent.follow_meta_refresh = true
-    # @agent.set_proxy('proxy.example.com', 8080)
   end
 
   def token
-    return @token if @token
-    url = SERVER_URL + 'api/login'
-    form_data = URI.encode_www_form('email' => @email, 'password' => @password)
-    begin
-      page = @agent.post(url, Base64.strict_encode64(form_data))
-    rescue Mechanize::ResponseCodeError => e
-      puts "Get token error (#{e.response_code})"
-      @token = nil
-    else
-      @token = page.body
+    @token ||= login
+  end
+
+  def params_base
+    { auth: token, email: @email }
+  end
+
+  def login
+    body = HashConversions.to_params(email: @email, password: @password)
+    res = Http::Exceptions.wrap_and_check do
+      self.class.post('/api/login', body: Base64.encode64(body))
     end
+    return res.body
+  rescue Http::Exceptions::HttpException => e
+    puts 'Login error: ' + e.message
+    return nil
   end
 
   def get_index(mark = nil, note_list = [])
     return nil unless token
-    url = SERVER_URL + 'api2/index'
-    params = { 'length' => 100, 'auth' => @token, 'email' => @email }
-    params['mark'] = mark unless mark.nil?
-    begin
-      page = @agent.get(url, params)
-    rescue Mechanize::ResponseCodeError => e
-      puts "Get index error (#{e.response_code})"
-      return nil
+    params = params_base.merge(length: 20)
+    params.merge!(mark: mark) unless mark.nil?
+    res = Http::Exceptions.wrap_and_check do
+      self.class.get('/api2/index', query: params, format: :json)
     end
-    index = JSON.parse(page.body)
-    note_list.concat(index['data'])
-    if index.key?('mark')
-      return get_index(index['mark'], note_list)
-    else
-      return note_list
-    end
+    note_list.concat(res['data'])
+    res.key?('mark') ? get_index(res['mark'], note_list) : note_list
+  rescue Http::Exceptions::HttpException => e
+    puts 'Get index error: ' + e.message
+    return nil
   end
 
   def get_note(key)
     return nil unless token
-    url = SERVER_URL + "api2/data/#{key}"
-    begin
-      page = @agent.get(url, 'auth' => @token, 'email' => @email)
-    rescue Mechanize::ResponseCodeError => e
-      puts "Get note error (#{e.response_code})"
-      return nil
-    else
-      return JSON.parse(page.body)
+    res = Http::Exceptions.wrap_and_check do
+      self.class.get("/api2/data/#{key}", query: params_base, format: :json)
     end
+    return res.parsed_response
+  rescue Http::Exceptions::HttpException => e
+    puts 'Get note error: ' + e.message
+    return nil
   end
 
   def update_note(note)
     return nil unless token
-    api_str = 'api2/data' + (note.key?('key') ? "/#{note['key']}" : '')
-    url = SERVER_URL + api_str + "?auth=#{@token}&email=#{@email}"
-    begin
-      page = @agent.post(url, ERB::Util.url_encode(JSON.generate(note)),
-                         'Content-Type' => 'application/json')
-    rescue Mechanize::ResponseCodeError => e
-      puts "Create note error (#{e.response_code})"
-      return nil
-    else
-      note_new = JSON.parse(page.body)
-      note_new['content'] = note['content'] unless note_new['content']
-      return note_new
+    res = Http::Exceptions.wrap_and_check do
+      self.class.post("/api2/data/#{note['key']}",
+                      query: params_base, body: note.to_json, format: :json)
     end
+    return res.parsed_response
+  rescue Http::Exceptions::HttpException => e
+    puts 'Update note error: ' + e.message
+    return nil
   end
 
   def create_note(note)
+    return nil unless token
     if note.is_a?(String)
       now = Time.now.to_i
-      note = { 'createdate' => now, 'modifydate' => now, 'content' => note }
-      return update_note(note)
-    else
-      update_note(note)
+      note = { createdate: now, modifydate: now, content: note }
     end
+    res = Http::Exceptions.wrap_and_check do
+      self.class.post('/api2/data',
+                      query: params_base, body: note.to_json, format: :json)
+    end
+    return res.parsed_response.merge('content' => note[:content])
+  rescue Http::Exceptions::HttpException => e
+    puts 'Create note error: ' + e.message
+    return nil
   end
 
   def delete_note(key)
     return false unless token
-    url = SERVER_URL + 'api2/data/' + key
-    @agent.delete(url, 'auth' => @token, 'email' => @email)
+    Http::Exceptions.wrap_and_check do
+      self.class.delete("/api2/data/#{key}", query: params_base)
+    end
+    return true
+  rescue Http::Exceptions::HttpException => e
+    puts 'Delete note error: ' + e.message
+    return false
   end
 end
 
