@@ -69,7 +69,7 @@ class Simplenote
   def update_note(note)
     return nil unless token
     res = Http::Exceptions.wrap_and_check do
-      self.class.post("/api2/data/#{note['key']}",
+      self.class.post('/api2/data' + (note.key?('key') ? "/#{note['key']}" : ''),
                       query: params_base, body: note.to_json, format: :json)
     end
     return note.merge(res.parsed_response)
@@ -79,19 +79,11 @@ class Simplenote
   end
 
   def create_note(note)
-    return nil unless token
     if note.is_a?(String)
       now = Time.now.to_i
-      note = { createdate: now, modifydate: now, content: note }
+      note = { 'createdate' => now, 'modifydate' => now, 'content' => note }
     end
-    res = Http::Exceptions.wrap_and_check do
-      self.class.post('/api2/data',
-                      query: params_base, body: note.to_json, format: :json)
-    end
-    return res.parsed_response.merge('content' => note[:content])
-  rescue Http::Exceptions::HttpException => e
-    puts 'Create note error: ' + e.message
-    return nil
+    update_note(note)
   end
 
   def delete_note(key)
