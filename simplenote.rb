@@ -72,7 +72,7 @@ class Simplenote
       self.class.post("/api2/data/#{note['key']}",
                       query: params_base, body: note.to_json, format: :json)
     end
-    return res.parsed_response
+    return note.merge(res.parsed_response)
   rescue Http::Exceptions::HttpException => e
     puts 'Update note error: ' + e.message
     return nil
