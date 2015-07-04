@@ -8,6 +8,7 @@
 require 'httparty'
 require 'http/exceptions'
 require 'base64'
+require 'erb'
 
 #-------------------------------------------------------------------------------
 # Simplenote server
@@ -70,7 +71,9 @@ class Simplenote
     return nil unless token
     res = Http::Exceptions.wrap_and_check do
       self.class.post('/api2/data' + (note.key?('key') ? "/#{note['key']}" : ''),
-                      query: params_base, body: note.to_json, format: :json)
+                      query: params_base,
+                      body: ERB::Util.url_encode(note.to_json),
+                      format: :json)
     end
     return note.merge(res.parsed_response)
   rescue Http::Exceptions::HttpException => e
