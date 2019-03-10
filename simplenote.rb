@@ -74,7 +74,7 @@ class Simplenote
       self.class.base_uri(URI_API)
       self.class.get("/i/#{key}", headers: headers_for_api, format: :json)
     end
-    res.merge("key" => key)
+    res.merge!("key" => key, "version" => res.headers["X-Simperium-Version"].to_i)
   rescue Http::Exceptions::HttpException => e
     puts 'Get note error: ' + e.message
   end
@@ -82,14 +82,16 @@ class Simplenote
   def update_note(note)
     return nil unless get_token
     key = note.delete("key")
+    version = note.delete("version")
     note["modificationDate"] = Time.now.to_f
     res = Http::Exceptions.wrap_and_check do
       params = { "response" => true }
       self.class.base_uri(URI_API)
-      self.class.post("/i/#{key}", headers: headers_for_api, query: params,
+      self.class.post("/i/#{key}" + (version ? "/v/#{version.to_s}" : ""),
+                      headers: headers_for_api, query: params,
                       body: note.to_json.unicode_escape, format: :json)
     end
-    res.merge("key" => key)
+    res.merge!("key" => key, "version" => res.headers["X-Simperium-Version"].to_i)
   rescue Http::Exceptions::HttpException => e
     puts 'Update note error: ' + e.message
   end
