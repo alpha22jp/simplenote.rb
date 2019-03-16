@@ -1,5 +1,5 @@
 #!/usr/bin/env ruby
-# coding: UTF-8
+# coding: utf-8
 #-------------------------------------------------------------------------------
 # simplenote_test.rb
 #   Author: alpha22jp@gmail.com
@@ -19,35 +19,35 @@ password = 'password'
 # Show note
 
 def show_note(note)
-  create_date = Time.at(note['createdate'].to_i).strftime('%Y-%m-%d %H:%M:%S')
-  modify_date = Time.at(note['modifydate'].to_i).strftime('%Y-%m-%d %H:%M:%S')
-  markdown = note['systemtags'].find { |i| i == 'markdown' } ? 1 : 0
-  pinned = note['systemtags'].find { |i| i == 'pinned' } ? 1 : 0
+  create_date = Time.at(note["creationDate"].to_i).strftime('%Y-%m-%d %H:%M:%S')
+  modify_date = Time.at(note["modificationDate"].to_i).strftime('%Y-%m-%d %H:%M:%S')
+  markdown = note["systemTags"].find { |i| i == "markdown" } ? 1 : 0
+  pinned = note["systemTags"].find { |i| i == "pinned" } ? 1 : 0
 
-  puts '----'
-  puts "Key: #{note['key']}"
-  puts "Deleted: #{note['deleted']}: Version: #{note['version']} SyncNum: #{note['syncnum']}"
-  puts "Create date: #{create_date}"
-  puts "Modify date: #{modify_date}"
-  puts "Markdown: #{markdown}, Pinned: #{pinned}"
-  puts "Tags: #{note['tags']}"
+  puts "----"
+  puts "key: #{note["key"]}"
+  puts "version:  #{note["version"]}"
+  puts "created:  #{create_date}"
+  puts "modified: #{modify_date}"
+  puts "markdown: #{markdown}, pinned: #{pinned}"
+  puts "tags: #{note["tags"]}"
   puts
-  puts "#{note['content']}" if note.key?('content')
+  puts "#{note["content"]}" if note.key?("content")
 end
 
 #-------------------------------------------------------------------------------
 # Update all notes
 
 def update_all_notes(server, db, force = false)
-  notes = server.get_index
-  notes.each do |note|
-    note_db = db.search_note(note['key'])
-    next if !force && note_db && note['syncnum'].to_i <= note_db['syncnum'].to_i
-    puts "Need to update #{note['key']}"
-    note = server.get_note(note['key'])
+  index = server.get_index
+  index.each do |item|
+    note_db = db.search_note(item["id"])
+    next if !force && note_db && item["v"] <= note_db["version"]
+    puts "Need to update: #{item["id"]}"
+    note = server.get_note(item["id"])
     db.update_note(note)
   end
-  puts "Total note count: #{notes.count}"
+  puts "Total note count: #{index.count}"
 end
 
 #-------------------------------------------------------------------------------
@@ -56,7 +56,7 @@ end
 def show_all_notes(db)
   notes = server.get_index
   notes.each do |note|
-    note = server.get_note(note['key'])
+    note = server.get_note(note["key"])
     show_note(note)
   end
 end
@@ -65,7 +65,7 @@ end
 # Show all undeleted notes on DB
 
 def show_all_notes_db(db)
-  db.all_notes.select { |note| note['deleted'] == 0 }
+  db.all_notes.select { |note| note["deleted"] == 0 }
     .each { |note| show_note(note) }
 end
 
@@ -75,7 +75,7 @@ end
 server = Simplenote.new(email, password)
 db = SimplenoteDB.new('notes.db')
 
-update_all_notes(server, db, false)
+# update_all_notes(server, db, false)
 show_all_notes_db(db)
 
 # note = db.search_note('3c4b6b1c176111e581fcc9023998867e')

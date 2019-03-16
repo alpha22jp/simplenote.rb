@@ -1,5 +1,5 @@
 #!/usr/bin/env ruby
-# coding: UTF-8
+# coding: utf-8
 #-------------------------------------------------------------------------------
 # simplenote.rb
 #   Author: alpha22jp@gmail.com
@@ -8,14 +8,25 @@
 require 'httparty'
 require 'http/exceptions'
 require 'base64'
-require 'erb'
+require 'uuid'
+
+class String
+  # TODO: need to handle salogate pair
+  def unicode_escape
+    self.unpack('U*').map{ |i| i < 0x100 ? i.chr : '\u' + i.to_s(16).rjust(4, '0') }.join
+  end
+end
 
 #-------------------------------------------------------------------------------
 # Simplenote server
 
 class Simplenote
   include HTTParty
-  base_uri 'https://simple-note.appspot.com/'
+  APP_ID = "chalk-bump-f49"
+  API_KEY = Base64.decode64("YzhjMmI4NjMzNzE1NGNkYWJjOTg5YjIzZTMwYzZiZjQ=")
+  URI_API = "https://api.simperium.com/1/" + APP_ID + "/note/"
+  URI_AUTH = "https://auth.simperium.com/1/" + APP_ID
+  URI_API_TEST = 'http://192.168.11.2/'
 
   def initialize(email, password)
     @email = email
@@ -23,81 +34,94 @@ class Simplenote
     @token = nil
   end
 
-  def token
-    @token ||= login
+  def get_token
+    @token ||= authenticate
   end
 
-  def params_base
-    { auth: token, email: @email }
+  def headers_for_api
+    { "X-Simperium-Token" => get_token, "Content-Type" => "application/json" }
   end
 
-  def login
-    body = HashConversions.to_params(email: @email, password: @password)
+  def authenticate
     res = Http::Exceptions.wrap_and_check do
-      self.class.post('/api/login', body: Base64.encode64(body))
+      headers = { "X-Simperium-API-Key" => API_KEY }
+      body = { "username" => @email, "password" => @password }.to_json
+      self.class.base_uri(URI_AUTH)
+      self.class.post("/authorize/", headers: headers, body: body, format: :json)
     end
-    return res.body
+    res["access_token"]
   rescue Http::Exceptions::HttpException => e
-    puts 'Login error: ' + e.message
-    return nil
+    puts "Login error: " + e.message
   end
 
   def get_index(mark = nil, note_list = [])
-    return nil unless token
-    params = params_base.merge(length: 20)
-    params.merge!(mark: mark) unless mark.nil?
+    return nil unless get_token
     res = Http::Exceptions.wrap_and_check do
-      self.class.get('/api2/index', query: params, format: :json)
+      params = { "data" => true, "limit" => 100 }
+      params.merge!("mark" => mark) unless mark.nil?
+      self.class.base_uri(URI_API)
+      self.class.get("/index", headers: headers_for_api, query: params, format: :json)
     end
-    note_list.concat(res['data'])
-    res.key?('mark') ? get_index(res['mark'], note_list) : note_list
+    note_list.concat(res["index"])
+    res.key?("mark") ? get_index(res["mark"], note_list) : note_list
   rescue Http::Exceptions::HttpException => e
-    puts 'Get index error: ' + e.message
-    return nil
+    puts "Get index error: " + e.message
   end
 
   def get_note(key)
-    return nil unless token
+    return nil unless get_token
     res = Http::Exceptions.wrap_and_check do
-      self.class.get("/api2/data/#{key}", query: params_base, format: :json)
+      self.class.base_uri(URI_API)
+      self.class.get("/i/#{key}", headers: headers_for_api, format: :json)
     end
-    return res.parsed_response
+    res.merge!("key" => key, "version" => res.headers["X-Simperium-Version"].to_i)
   rescue Http::Exceptions::HttpException => e
-    puts 'Get note error: ' + e.message
-    return nil
+    puts "Get note #{key} error: " + e.message
   end
 
   def update_note(note)
-    return nil unless token
+    return nil unless get_token
+    key = note.delete("key")
+    version = note.delete("version")
+    note["modificationDate"] = Time.now.to_f
     res = Http::Exceptions.wrap_and_check do
-      self.class.post('/api2/data' + (note.key?('key') ? "/#{note['key']}" : ''),
-                      query: params_base,
-                      body: ERB::Util.url_encode(note.to_json),
-                      format: :json)
+      params = { "response" => true }
+      self.class.base_uri(URI_API)
+      self.class.post("/i/#{key}" + (version ? "/v/#{version.to_s}" : ""),
+                      headers: headers_for_api, query: params,
+                      body: note.to_json.unicode_escape, format: :json)
     end
-    return note.merge(res.parsed_response)
+    res.merge!("key" => key, "version" => res.headers["X-Simperium-Version"].to_i)
   rescue Http::Exceptions::HttpException => e
     puts 'Update note error: ' + e.message
-    return nil
   end
 
-  def create_note(note)
-    if note.is_a?(String)
-      now = Time.now.to_i
-      note = { 'createdate' => now, 'modifydate' => now, 'content' => note }
+  def create_note(note_or_string)
+    if note_or_string.is_a?(String)
+      note = { "creationDate" => Time.now.to_f, "deleted" => false, "content" => note_or_string,
+               "tags" => [], "systemTags" => [], "shareURL" => "", "publishURL" => "" }
     end
+    note["key"] = UUID.generate(:compact)
     update_note(note)
   end
 
-  def delete_note(key)
-    return false unless token
+  def trash_note(note)
+    note["deleted"] = true
+    update_note(note)
+  end
+
+  def delete_note(note)
+    return false unless get_token
+    # Note has to be trashed before delettion
+    note = trash_note(note)
+    key = note["key"]
     Http::Exceptions.wrap_and_check do
-      self.class.delete("/api2/data/#{key}", query: params_base)
+      self.class.base_uri(URI_API)
+      self.class.delete("/i/#{key}", headers: headers_for_api)
     end
     return true
   rescue Http::Exceptions::HttpException => e
     puts 'Delete note error: ' + e.message
-    return false
   end
 end
 
