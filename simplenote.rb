@@ -1,5 +1,5 @@
 #!/usr/bin/env ruby
-# coding: UTF-8
+# coding: utf-8
 #-------------------------------------------------------------------------------
 # simplenote.rb
 #   Author: alpha22jp@gmail.com
@@ -76,7 +76,7 @@ class Simplenote
     end
     res.merge!("key" => key, "version" => res.headers["X-Simperium-Version"].to_i)
   rescue Http::Exceptions::HttpException => e
-    puts 'Get note error: ' + e.message
+    puts "Get note #{key} error: " + e.message
   end
 
   def update_note(note)
