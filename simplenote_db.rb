@@ -47,6 +47,8 @@ class SimplenoteDB
          attr == "shareURL" || attr == "publishURL"
         # Quote value if it's TEXT attribute
         sql = "UPDATE notes SET #{attr}=\"#{value}\" WHERE key=?"
+      elsif attr == "deleted"
+        sql = "UPDATE notes SET #{attr}=#{value ? 1 : 0} WHERE key=?"
       else
         sql = "UPDATE notes SET #{attr}=#{value} WHERE key=?"
       end
@@ -60,7 +62,7 @@ class SimplenoteDB
   end
 
   def to_note(entry)
-    { "key" => entry[0], "deleted" => entry[1], "version" => entry[2],
+    { "key" => entry[0], "deleted" => entry[1] == 1, "version" => entry[2],
       "creationDate" => entry[3], "modificationDate" => entry[4],
       "systemTags" => entry[5].split(' '), "tags" => entry[6].split(' '),
       "shareURL" => entry[7], "publishURL" => entry[8], "content" => entry[9] }
