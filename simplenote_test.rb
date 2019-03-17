@@ -65,7 +65,7 @@ end
 # Show all undeleted notes on DB
 
 def show_all_notes_db(db)
-  db.all_notes.select { |note| note["deleted"] == 0 }
+  db.all_notes.select { |note| !note["deleted"] }
     .each { |note| show_note(note) }
 end
 
