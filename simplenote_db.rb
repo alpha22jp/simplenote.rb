@@ -22,7 +22,6 @@ class SimplenoteDB
   end
 
   def add_note(note)
-    p note
     mapping = {
       key: note["key"], deleted: note["deleted"] ? 1 : 0, version: note["version"],
       creationDate: note["creationDate"], modificationDate: note["modificationDate"],
