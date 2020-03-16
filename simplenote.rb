@@ -43,7 +43,7 @@ class Simplenote
 
   def authenticate
     res = Http::Exceptions.wrap_and_check do
-      headers = { "X-Simperium-API-Key" => API_KEY }
+      headers = { "X-Simperium-API-Key" => API_KEY, "User-Agent" => "simplenote.rb" }
       body = { "username" => @email, "password" => @password }.to_json
       self.class.base_uri(URI_AUTH)
       self.class.post("/authorize/", headers: headers, body: body, format: :json)
