@@ -26,7 +26,6 @@ class Simplenote
   API_KEY = Base64.decode64("YzhjMmI4NjMzNzE1NGNkYWJjOTg5YjIzZTMwYzZiZjQ=")
   URI_API = "https://api.simperium.com/1/" + APP_ID + "/note/"
   URI_AUTH = "https://auth.simperium.com/1/" + APP_ID
-  URI_API_TEST = 'http://192.168.11.2/'
 
   def initialize(email, password)
     @email = email
