@@ -1,10 +1,4 @@
-#!/usr/bin/env ruby
-# coding: utf-8
-#-------------------------------------------------------------------------------
-# simplenote.rb
-#   Author: alpha22jp@gmail.com
-#-------------------------------------------------------------------------------
-
+require "simplenote_ruby/version"
 require 'httparty'
 require 'http/exceptions'
 require 'base64'
@@ -16,9 +10,6 @@ class String
     self.unpack('U*').map{ |i| i < 0x100 ? i.chr : '\u' + i.to_s(16).rjust(4, '0') }.join
   end
 end
-
-#-------------------------------------------------------------------------------
-# Simplenote server
 
 class Simplenote
   include HTTParty
@@ -123,5 +114,3 @@ class Simplenote
     puts 'Delete note error: ' + e.message
   end
 end
-
-#-------------------------------------------------------------------------------
