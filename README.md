@@ -22,7 +22,7 @@ Get all notes:
 ``` ruby
 index = sn.get_index
 index.each do |item|
-  note = sn.get_note(note["key"])
+  note = sn.get_note(item["id"])
   puts "key: #{note["key"]}"
   puts "#{note["content"]}" if note.key?("content")
 end
