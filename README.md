@@ -4,23 +4,50 @@ Ruby library to interact with [Simplenote](https://app.simmplenote.com/) just li
 
 ## Installation
 
-Add this line to your application's Gemfile:
-
-```ruby
-gem 'simplenote_ruby'
-```
-
-And then execute:
-
-    $ bundle install
-
-Or install it yourself as:
+Install via gem:
 
     $ gem install simplenote_ruby
 
 ## Usage
 
-TODO: Write usage instructions here
+First of all, authenticate user and create simplenote object.
+``` ruby
+import 'simplenote_ruby'
+user = "foo@example.com"
+password = "abcdef"
+sn = Simplenote.new(user, password)
+```
+
+Get all notes:
+``` ruby
+index = sn.get_index
+index.each do |item|
+  note = sn.get_note(note["key"])
+  puts "key: #{note["key"]}"
+  puts "#{note["content"]}" if note.key?("content")
+end
+```
+
+Update note:
+``` ruby
+note["content"] = "Test. Test."
+sn.update_note(note)
+```
+
+Create note from text:
+``` ruby
+sn.create_note("New_note. Test. Test.")
+```
+
+Trash note:
+``` ruby
+sn.trash_note(note)
+```
+
+Delete note:
+``` ruby
+sn.delete_note(note)
+```
 
 ## Development
 
