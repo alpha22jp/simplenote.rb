@@ -1,3 +1,5 @@
+![Ruby Gem](https://github.com/alpha22jp/simplenote.rb/workflows/Ruby%20Gem/badge.svg)
+
 # SimplenoteRuby
 
 Ruby library to interact with [Simplenote](https://app.simmplenote.com/) just like Python library [simplenote.py](https://github.com/mrtazz/simplenote.py).
