@@ -2,8 +2,7 @@ name: Ruby Gem
 
 on:
   push:
-    branches: [ master ]
-    paths: 'lib/simplenote_ruby/version.rb'
+    tags: 'v*'
 
 jobs:
   build:
